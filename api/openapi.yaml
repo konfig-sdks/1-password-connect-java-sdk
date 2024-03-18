@@ -1,0 +1,2245 @@
+openapi: 3.0.2
+info:
+  contact:
+    email: support@1password.com
+    name: 1Password Integrations
+    url: https://support.1password.com/
+  description: REST API interface for 1Password Connect.
+  title: 1Password Connect
+  version: 1.5.7
+  x-api-status-urls: false
+  x-konfig-ignore:
+    potential-incorrect-type: true
+servers:
+- url: http://localhost:8080/v1
+tags:
+- description: Access and manage items inside 1Password Vaults
+  name: Items
+- name: Files
+- description: Access 1Password Vaults
+  name: Vaults
+- name: Health
+- description: Access API Request Activity
+  name: Activity
+- name: Metrics
+paths:
+  /activity:
+    get:
+      operationId: Activity_getApiRequests
+      parameters:
+      - description: How many API Events should be retrieved in a single request.
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 50
+          example: 10
+          type: integer
+          x-konfig-original-example: 10
+          x-konfig-generated-schema: konfig-generated-schema-paths--activity-get-parameters-0-schema
+        style: form
+      - description: How far into the collection of API Events should the response
+          start
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          example: 50
+          type: integer
+          x-konfig-original-example: 50
+          x-konfig-generated-schema: konfig-generated-schema-paths--activity-get-parameters-1-schema
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityGetApiRequestsResponse'
+          description: OK
+          headers:
+            Content-Range:
+              description: An decription of what part of the collection has been returned
+                as well as the total size.
+              explode: false
+              schema:
+                example: 1-50/1134
+                type: string
+                x-konfig-original-example: 1-50/1134
+                x-konfig-generated-schema: konfig-generated-schema-paths--activity-get-responses-200-headers-Content-Range-schema
+              style: simple
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Retrieve a list of API Requests that have been made.
+      tags:
+      - Activity
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--activity
+      x-accepts: application/json
+  /vaults:
+    get:
+      operationId: Vaults_listAll
+      parameters:
+      - description: Filter the Vault collection based on Vault name using SCIM eq
+          filter
+        explode: true
+        in: query
+        name: filter
+        required: false
+        schema:
+          example: name eq "Some Vault Name"
+          type: string
+          x-konfig-original-example: name eq "Some Vault Name"
+          x-konfig-generated-schema: konfig-generated-schema-paths--vaults-get-parameters-0-schema
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaultsListAllResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Get all Vaults
+      tags:
+      - Vaults
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--vaults
+      x-accepts: application/json
+  /vaults/{vaultUuid}:
+    get:
+      operationId: Vaults_getDetails
+      parameters:
+      - description: The UUID of the Vault to fetch Items from
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vault'
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "403":
+          content:
+            application/json:
+              example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+          description: Unauthorized access
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              example:
+                status: 404
+                message: "vault {itemUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 404
+                message: "vault {itemUuid} not found"
+          description: Vault not found
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Get Vault details and metadata
+      tags:
+      - Vaults
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid
+      x-accepts: application/json
+  /vaults/{vaultUuid}/items:
+    get:
+      operationId: Items_getAll
+      parameters:
+      - description: The UUID of the Vault to fetch Items from
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      - description: Filter the Item collection based on Item name using SCIM eq filter
+        explode: true
+        in: query
+        name: filter
+        required: false
+        schema:
+          example: title eq "Some Item Name"
+          type: string
+          x-konfig-original-example: title eq "Some Item Name"
+          x-konfig-generated-schema: konfig-generated-schema-paths--vaults-vaultUuid-items-get-parameters-1-schema
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemsGetAllResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              example:
+                status: 404
+                message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 404
+                message: "vault {vaultUuid} not found"
+          description: Vault not found
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Get all items for inside a Vault
+      tags:
+      - Items
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items
+      x-accepts: application/json
+    post:
+      operationId: Items_createNewItem
+      parameters:
+      - description: The UUID of the Vault to create an Item in
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FullItem'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullItem'
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                status: 400
+                message: Invalid item category
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 400
+                message: Invalid item category
+          description: Unable to create item due to invalid input
+          x-do-not-generate: true
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "403":
+          content:
+            application/json:
+              example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+          description: Unauthorized access
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              examples:
+                vaultNotFound:
+                  summary: Vault not found
+                  value:
+                    status: 404
+                    message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Item not found
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Create a new Item
+      tags:
+      - Items
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-post--vaults-vaultUuid-items
+      x-content-type: application/json
+      x-accepts: application/json
+  /vaults/{vaultUuid}/items/{itemUuid}:
+    delete:
+      operationId: Items_deleteItemById
+      parameters:
+      - description: The UUID of the Vault the item is in
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      - description: The UUID of the Item to update
+        explode: false
+        in: path
+        name: itemUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Successfully deleted an item
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "403":
+          content:
+            application/json:
+              example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+          description: Unauthorized access
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              examples:
+                vaultNotFound:
+                  summary: Vault not found
+                  value:
+                    status: 404
+                    message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Item not found
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Delete an Item
+      tags:
+      - Items
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-delete--vaults-vaultUuid-items-itemUuid
+      x-accepts: application/json
+    get:
+      operationId: Items_getDetailsById
+      parameters:
+      - description: The UUID of the Vault to fetch Item from
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      - description: The UUID of the Item to fetch
+        explode: false
+        in: path
+        name: itemUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullItem'
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "403":
+          content:
+            application/json:
+              example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+          description: Unauthorized access
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              examples:
+                itemNotFound:
+                  summary: Item not found
+                  value:
+                    status: 404
+                    message: "item {itemUuid} not found"
+                vaultNotFound:
+                  summary: Vault not found
+                  value:
+                    status: 404
+                    message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Item not found
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Get the details of an Item
+      tags:
+      - Items
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items-itemUuid
+      x-accepts: application/json
+    patch:
+      description: |
+        Applies a modified [RFC6902 JSON Patch](https://tools.ietf.org/html/rfc6902) document to an Item or ItemField. This endpoint only supports `add`, `remove` and `replace` operations.
+
+        When modifying a specific ItemField, the ItemField's ID in the `path` attribute of the operation object: `/fields/{fieldId}`
+      operationId: Items_updateSubsetAttributes
+      parameters:
+      - description: The UUID of the Vault the item is in
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      - description: The UUID of the Item to update
+        explode: false
+        in: path
+        name: itemUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            examples:
+              ReplaceAllAttributes:
+                summary: Replace an entire Item with new fields. Equivalent to a PUT
+                  request.
+                value:
+                - op: replace
+                  path: /
+                  value:
+                    tags:
+                    - tag1
+                    - tag2
+                    title: New Title
+                    favorite: true
+                    "...": Any attr from FullItem schema
+              PatchItemAttr:
+                summary: Update specific Item attributes
+                value:
+                - op: replace
+                  path: /favorite
+                  value: true
+                - op: remove
+                  path: /tags/1
+              PatchItemField:
+                summary: Add a new ItemField to the Item
+                value:
+                - op: add
+                  path: /fields
+                  value:
+                    label: New Field
+                    type: string
+                    value: hunter2
+              PatchItemFieldWithID:
+                summary: Modify or remove an ItemField.
+                value:
+                - op: replace
+                  path: /fields/r9qxq7xnhfhukoxsc8ymqr0y11
+                  value:
+                    label: Replacement Title
+                    type: string
+                    value: new value
+                - op: remove
+                  path: /fields/h2nl155dshi043yse7wa3u1hs7
+              PatchItemFieldAttr:
+                summary: Modify a specific ItemField attribute.
+                value:
+                - op: add
+                  path: /fields/s2ju540zlna8bdj4uro7sj64rk/label
+                  value: New field name
+                - op: remove
+                  path: /fields/s2ju540zlna8bdj4uro7sj64rk/value
+            schema:
+              $ref: '#/components/schemas/Patch'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullItem'
+          description: "OK - Item updated. If no Patch operations were provided, Item\
+            \ is unmodified."
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "403":
+          content:
+            application/json:
+              example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+          description: Unauthorized access
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              examples:
+                itemNotFound:
+                  summary: Item not found
+                  value:
+                    status: 404
+                    message: "item {itemUuid} not found"
+                vaultNotFound:
+                  summary: Vault not found
+                  value:
+                    status: 404
+                    message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Item not found
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Update a subset of Item attributes
+      tags:
+      - Items
+      x-konfig-operation-can-have-single-parameter: false
+      x-content-type: application/json
+      x-accepts: application/json
+    put:
+      operationId: Items_updateItemDetails
+      parameters:
+      - description: The UUID of the Item's Vault
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      - description: The UUID of the Item to update
+        explode: false
+        in: path
+        name: itemUuid
+        required: true
+        schema:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FullItem'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullItem'
+          description: OK
+        "400":
+          content:
+            application/json:
+              example:
+                status: 400
+                message: "The item doesn't have a {example field name} field."
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 400
+                message: "The item doesn't have a {example field name} field."
+          description: Unable to create item due to invalid input
+          x-do-not-generate: true
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "403":
+          content:
+            application/json:
+              example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+          description: Unauthorized access
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              examples:
+                itemNotFound:
+                  summary: Item not found
+                  value:
+                    status: 404
+                    message: "item {itemUuid} not found"
+                vaultNotFound:
+                  summary: Vault not found
+                  value:
+                    status: 404
+                    message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Item not found
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Update an Item
+      tags:
+      - Items
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-put--vaults-vaultUuid-items-itemUuid
+      x-content-type: application/json
+      x-accepts: application/json
+  /vaults/{vaultUuid}/items/{itemUuid}/files:
+    get:
+      operationId: Files_getAllFilesInsideItem
+      parameters:
+      - description: The UUID of the Vault to fetch Items from
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - description: The UUID of the Item to fetch files from
+        explode: false
+        in: path
+        name: itemUuid
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - description: Tells server to return the base64-encoded file contents in the
+          response.
+        explode: true
+        in: query
+        name: inline_files
+        required: false
+        schema:
+          example: true
+          type: boolean
+          x-konfig-original-example: true
+          x-konfig-generated-schema: konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-get-parameters-2-schema
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilesGetAllFilesInsideItemResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              examples:
+                itemNotFound:
+                  summary: Item not found
+                  value:
+                    status: 404
+                    message: "item {itemUuid} not found"
+                vaultNotFound:
+                  summary: Vault not found
+                  value:
+                    status: 404
+                    message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Item not found
+          x-do-not-generate: true
+        "413":
+          content:
+            application/json:
+              examples:
+                fileTooLarge:
+                  summary: File too large
+                  value:
+                    status: 413
+                    message: "File is too large to inline in request. Use the /v1/vaults/{vaultUUID}/items/{itemUUID}/files/{fileUUID}/content\
+                      \ endpoint instead."
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: File content too large to display
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Get all the files inside an Item
+      tags:
+      - Files
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items-itemUuid-files
+      x-accepts: application/json
+  /vaults/{vaultUuid}/items/{itemUuid}/files/{fileUuid}:
+    get:
+      operationId: Files_getFileDetails
+      parameters:
+      - description: The UUID of the Vault to fetch Item from
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - description: The UUID of the Item to fetch File from
+        explode: false
+        in: path
+        name: itemUuid
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - description: The UUID of the File to fetch
+        explode: false
+        in: path
+        name: fileUuid
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - description: Tells server to return the base64-encoded file contents in the
+          response.
+        explode: true
+        in: query
+        name: inline_files
+        required: false
+        schema:
+          example: true
+          type: boolean
+          x-konfig-original-example: true
+          x-konfig-generated-schema: konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-fileUuid-get-parameters-3-schema
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+          description: OK
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "403":
+          content:
+            application/json:
+              example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 403
+                message: "vault {vaultUuid} is not in scope"
+          description: Unauthorized access
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              examples:
+                fileNotFound:
+                  summary: File not found
+                  value:
+                    status: 404
+                    message: "file {fileUuid} not found"
+                itemNotFound:
+                  summary: Item not found
+                  value:
+                    status: 404
+                    message: "item {itemUuid} not found"
+                vaultNotFound:
+                  summary: Vault not found
+                  value:
+                    status: 404
+                    message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: File not found
+          x-do-not-generate: true
+        "413":
+          content:
+            application/json:
+              examples:
+                fileTooLarge:
+                  summary: File too large
+                  value:
+                    status: 413
+                    message: "File is too large to inline in request. Use the /v1/vaults/{vaultUUID}/items/{itemUUID}/files/{fileUUID}/content\
+                      \ endpoint instead."
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: File content too large to display
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Get the details of a File
+      tags:
+      - Files
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items-itemUuid-files-fileUuid
+      x-accepts: application/json
+  /vaults/{vaultUuid}/items/{itemUuid}/files/{fileUuid}/content:
+    get:
+      operationId: Files_getContent
+      parameters:
+      - description: The UUID of the Vault the item is in
+        explode: false
+        in: path
+        name: vaultUuid
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - description: The UUID of the Item the File is in
+        explode: false
+        in: path
+        name: itemUuid
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - description: UUID of the file to get content from
+        explode: false
+        in: path
+        name: fileUuid
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/octet-stream:
+              schema:
+                $ref: '#/components/schemas/FilesGetContentResponse'
+          description: Success
+          headers:
+            Content-Disposition:
+              explode: false
+              schema:
+                example: attachment; filename="privkey.pem"
+                type: string
+                x-konfig-original-example: attachment; filename="privkey.pem"
+                x-konfig-generated-schema: konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-fileUuid-content-get-responses-200-headers-Content-Disposition-schema
+              style: simple
+            Content-Length:
+              explode: false
+              schema:
+                example: "6432"
+                type: string
+                x-konfig-original-example: "6432"
+                x-konfig-generated-schema: konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-fileUuid-content-get-responses-200-headers-Content-Length-schema
+              style: simple
+        "401":
+          content:
+            application/json:
+              example:
+                status: 401
+                message: Invalid token signature
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              x-konfig-original-example:
+                status: 401
+                message: Invalid token signature
+          description: Invalid or missing token
+          x-do-not-generate: true
+        "404":
+          content:
+            application/json:
+              examples:
+                fileNotFound:
+                  summary: File not found
+                  value:
+                    status: 404
+                    message: "file {fileUuid} not found"
+                itemNotFound:
+                  summary: Item not found
+                  value:
+                    status: 404
+                    message: "item {itemUuid} not found"
+                vaultNotFound:
+                  summary: Vault not found
+                  value:
+                    status: 404
+                    message: "vault {vaultUuid} not found"
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: File not found
+          x-do-not-generate: true
+      security:
+      - ConnectToken: []
+      summary: Get the content of a File
+      tags:
+      - Files
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items-itemUuid-files-fileUuid-content
+      x-accepts: application/json
+  /heartbeat:
+    get:
+      operationId: Health_checkLiveness
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/HealthCheckLivenessResponse'
+          description: OK
+      servers:
+      - url: http://localhost:8080
+      summary: Ping the server for liveness
+      tags:
+      - Health
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--heartbeat
+      x-accepts: text/plain
+  /health:
+    get:
+      operationId: Health_serverStateCheck
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                WaitingForAPIRequest:
+                  summary: API server waiting for first authenticated request
+                  value:
+                    version: 1.2.1
+                    name: 1Password Connect API
+                    dependencies:
+                    - service: sync
+                      status: TOKEN_NEEDED
+                    - service: sqlite
+                      status: ACTIVE
+                      message: Connected to./1password.sqlite
+              schema:
+                $ref: '#/components/schemas/HealthServerStateCheckResponse'
+          description: OK
+      servers:
+      - url: http://localhost:8080
+      summary: Get state of the server and its dependencies.
+      tags:
+      - Health
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--health
+      x-accepts: application/json
+  /metrics:
+    get:
+      description: See Prometheus documentation for a complete data model.
+      operationId: Metrics_queryServerMetrics
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/MetricsQueryServerMetricsResponse'
+          description: Successfully returned Prometheus metrics
+      servers:
+      - url: http://localhost:8080
+      summary: Query server for exposed Prometheus metrics
+      tags:
+      - Metrics
+      x-konfig-operation-can-have-single-parameter: true
+      x-konfig-single-parameter-schema: konfig-generated-schema-single-parameter-schema-get--metrics
+      x-accepts: text/plain
+components:
+  schemas:
+    ErrorResponse:
+      properties:
+        status:
+          description: HTTP Status Code
+          type: integer
+        message:
+          description: A message detailing the error
+          type: string
+      type: object
+      x-konfig-is-used-in-non-successful-response: true
+      x-do-not-generate: true
+    File:
+      example:
+        id: 6r65pjq33banznomn7q22sj44e
+        name: foo.txt
+        size: 35
+        content_path: v1/vaults/ionaiwtdvgclrixbt6ztpqcxnq/items/p7eflcy7f5mk7vg6zrzf5rjjyu/files/6r65pjq33banznomn7q22sj44e/content
+        content: VGhlIGZ1dHVyZSBiZWxvbmdzIHRvIHRoZSBjdXJpb3VzLgo=
+      properties:
+        id:
+          description: ID of the file
+          example: 6r65pjq33banznomn7q22sj44e
+          type: string
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-File-properties-id
+        name:
+          description: Name of the file
+          example: foo.txt
+          type: string
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-File-properties-name
+        size:
+          description: Size in bytes of the file
+          example: 35
+          type: integer
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-File-properties-size
+        content_path:
+          description: Path of the Connect API that can be used to download the contents
+            of this file.
+          example: v1/vaults/ionaiwtdvgclrixbt6ztpqcxnq/items/p7eflcy7f5mk7vg6zrzf5rjjyu/files/6r65pjq33banznomn7q22sj44e/content
+          readOnly: true
+          type: string
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-File-properties-content_path
+        section:
+          $ref: '#/components/schemas/File_section'
+        content:
+          description: Base64-encoded contents of the file. Only set if size <= OP_MAX_INLINE_FILE_SIZE_KB
+            kb and `inline_files` is set to `true`.
+          example: !!binary |-
+            VkdobElHWjFkSFZ5WlNCaVpXeHZibWR6SUhSdklIUm9aU0JqZFhKcGIzVnpMZ289
+          format: byte
+          type: string
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-File-properties-content
+      type: object
+      x-konfig-original-example:
+        id: 6r65pjq33banznomn7q22sj44e
+        name: foo.txt
+        size: 35
+        content_path: v1/vaults/ionaiwtdvgclrixbt6ztpqcxnq/items/p7eflcy7f5mk7vg6zrzf5rjjyu/files/6r65pjq33banznomn7q22sj44e/content
+        content: VGhlIGZ1dHVyZSBiZWxvbmdzIHRvIHRoZSBjdXJpb3VzLgo=
+      x-konfig-generated-schema: konfig-generated-schema-components-schemas-File
+      x-konfig-is-used-in-successful-response: true
+    Vault:
+      example:
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        attributeVersion: 0
+        name: name
+        description: description
+        id: id
+        type: USER_CREATED
+        contentVersion: 6
+        items: 1
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+      properties:
+        description:
+          type: string
+        id:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        name:
+          type: string
+        attributeVersion:
+          description: The vault version
+          type: integer
+        contentVersion:
+          description: The version of the vault contents
+          type: integer
+        items:
+          description: Number of active items in the vault
+          type: integer
+        type:
+          enum:
+          - USER_CREATED
+          - PERSONAL
+          - EVERYONE
+          - TRANSFER
+          type: string
+        createdAt:
+          format: date-time
+          readOnly: true
+          type: string
+        updatedAt:
+          format: date-time
+          readOnly: true
+          type: string
+      type: object
+      x-konfig-is-used-in-successful-response: true
+    GeneratorRecipe:
+      description: The recipe is used in conjunction with the "generate" property
+        to set the character set used to generate a new secure value
+      properties:
+        length:
+          default: 32
+          description: Length of the generated value
+          example: 32
+          maximum: 64
+          minimum: 1
+          type: integer
+          x-konfig-original-example: 32
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-GeneratorRecipe-properties-length
+        characterSets:
+          items:
+            enum:
+            - LETTERS
+            - DIGITS
+            - SYMBOLS
+            type: string
+          maximum: 3
+          minimum: 0
+          type: array
+          uniqueItems: true
+        excludeCharacters:
+          description: List of all characters that should be excluded from generated
+            passwords.
+          example: abc1
+          type: string
+          x-konfig-original-example: abc1
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-GeneratorRecipe-properties-excludeCharacters
+      type: object
+    Item:
+      example:
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        urls:
+        - primary: true
+          href: https://example.com
+        - href: https://example.org
+        id: id
+        state: ARCHIVED
+        title: title
+        category: LOGIN
+        version: 0
+        favorite: false
+        vault:
+          id: id
+        lastEditedBy: lastEditedBy
+        tags:
+        - tags
+        - tags
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+      properties:
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        version:
+          type: integer
+        id:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        vault:
+          $ref: '#/components/schemas/Item_vault'
+        category:
+          enum:
+          - LOGIN
+          - PASSWORD
+          - API_CREDENTIAL
+          - SERVER
+          - DATABASE
+          - CREDIT_CARD
+          - MEMBERSHIP
+          - PASSPORT
+          - SOFTWARE_LICENSE
+          - OUTDOOR_LICENSE
+          - SECURE_NOTE
+          - WIRELESS_ROUTER
+          - BANK_ACCOUNT
+          - DRIVER_LICENSE
+          - IDENTITY
+          - REWARD_PROGRAM
+          - DOCUMENT
+          - EMAIL_ACCOUNT
+          - SOCIAL_SECURITY_NUMBER
+          - MEDICAL_RECORD
+          - SSH_KEY
+          - CUSTOM
+          type: string
+        urls:
+          example:
+          - primary: true
+            href: https://example.com
+          - href: https://example.org
+          items:
+            $ref: '#/components/schemas/Item_urls_inner'
+          type: array
+          x-konfig-original-example:
+          - primary: true
+            href: https://example.com
+          - href: https://example.org
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Item-properties-urls
+        favorite:
+          default: false
+          example: false
+          type: boolean
+          x-konfig-original-example: false
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Item-properties-favorite
+        state:
+          enum:
+          - ARCHIVED
+          - DELETED
+          readOnly: true
+          type: string
+        createdAt:
+          format: date-time
+          readOnly: true
+          type: string
+        updatedAt:
+          format: date-time
+          readOnly: true
+          type: string
+        lastEditedBy:
+          readOnly: true
+          type: string
+      required:
+      - category
+      - vault
+      type: object
+    FullItem:
+      allOf:
+      - $ref: '#/components/schemas/Item'
+      - $ref: '#/components/schemas/FullItem_allOf'
+      x-konfig-is-used-in-successful-response: true
+    Field:
+      properties:
+        id:
+          type: string
+        section:
+          $ref: '#/components/schemas/Field_section'
+        type:
+          default: STRING
+          enum:
+          - STRING
+          - EMAIL
+          - CONCEALED
+          - URL
+          - TOTP
+          - DATE
+          - MONTH_YEAR
+          - MENU
+          example: STRING
+          type: string
+          x-konfig-original-example: STRING
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Field-properties-type
+        purpose:
+          description: "Some item types, Login and Password, have fields used for\
+            \ autofill. This property indicates that purpose and is required for some\
+            \ item types."
+          enum:
+          - ""
+          - USERNAME
+          - PASSWORD
+          - NOTES
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        generate:
+          default: false
+          description: If value is not present then a new value should be generated
+            for this field
+          example: false
+          type: boolean
+          x-konfig-original-example: false
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Field-properties-generate
+        recipe:
+          $ref: '#/components/schemas/GeneratorRecipe'
+        entropy:
+          description: For fields with a purpose of `PASSWORD` this is the entropy
+            of the value
+          readOnly: true
+          type: number
+      required:
+      - id
+      - type
+      type: object
+    APIRequest:
+      description: Represents a request that was made to the API. Including what Token
+        was used and what resource was accessed.
+      example:
+        result: SUCCESS
+        actor:
+          userAgent: userAgent
+          requestIp: requestIp
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          account: account
+          jti: jti
+        resource:
+          item:
+            id: id
+          itemVersion: 0
+          type: ITEM
+          vault:
+            id: id
+        requestId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        action: READ
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        requestId:
+          description: The unique id used to identify a single request.
+          format: uuid
+          type: string
+        timestamp:
+          description: The time at which the request was processed by the server.
+          format: date-time
+          readOnly: true
+          type: string
+        action:
+          enum:
+          - READ
+          - CREATE
+          - UPDATE
+          - DELETE
+          type: string
+        result:
+          enum:
+          - SUCCESS
+          - DENY
+          type: string
+        actor:
+          $ref: '#/components/schemas/APIRequest_actor'
+        resource:
+          $ref: '#/components/schemas/APIRequest_resource'
+      type: object
+    Patch:
+      items:
+        $ref: '#/components/schemas/Patch_inner'
+      type: array
+    ServiceDependency:
+      description: The state of a registered server dependency.
+      example:
+        service: service
+        message: message
+        status: status
+      properties:
+        service:
+          type: string
+        status:
+          type: string
+        message:
+          description: Human-readable message for explaining the current state.
+          type: string
+      type: object
+    ActivityGetApiRequestsResponse:
+      items:
+        $ref: '#/components/schemas/APIRequest'
+      type: array
+      x-konfig-is-used-in-successful-response: true
+    VaultsListAllResponse:
+      items:
+        $ref: '#/components/schemas/Vault'
+      type: array
+      x-konfig-is-used-in-successful-response: true
+    ItemsGetAllResponse:
+      items:
+        $ref: '#/components/schemas/Item'
+      type: array
+      x-konfig-is-used-in-successful-response: true
+    FilesGetAllFilesInsideItemResponse:
+      items:
+        $ref: '#/components/schemas/File'
+      type: array
+      x-konfig-is-used-in-successful-response: true
+    FilesGetContentResponse:
+      format: binary
+      type: string
+      x-konfig-is-used-in-successful-response: true
+    HealthCheckLivenessResponse:
+      example: "."
+      type: string
+      x-konfig-original-example: "."
+      x-konfig-generated-schema: konfig-generated-schema-components-schemas-HealthCheckLivenessResponse
+      x-konfig-is-used-in-successful-response: true
+    HealthServerStateCheckResponse:
+      example:
+        name: name
+        version: version
+        dependencies:
+        - service: service
+          message: message
+          status: status
+        - service: service
+          message: message
+          status: status
+      properties:
+        version:
+          description: The Connect server's version
+          type: string
+        name:
+          type: string
+        dependencies:
+          items:
+            $ref: '#/components/schemas/ServiceDependency'
+          type: array
+      required:
+      - name
+      - version
+      type: object
+      x-konfig-is-used-in-successful-response: true
+    MetricsQueryServerMetricsResponse:
+      example: |
+        # HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
+        # TYPE go_gc_duration_seconds summary
+        go_gc_duration_seconds{quantile="0"} 2.9153e-05
+        go_gc_duration_seconds{quantile="0.25"} 6.2832e-05
+        go_gc_duration_seconds{quantile="0.5"} 9.7187e-05
+        go_gc_duration_seconds{quantile="0.75"} 0.000112967
+        go_gc_duration_seconds{quantile="1"} 0.000215819
+        go_gc_duration_seconds_sum 0.001376862
+        go_gc_duration_seconds_count 14
+      type: string
+      x-konfig-original-example: |
+        # HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
+        # TYPE go_gc_duration_seconds summary
+        go_gc_duration_seconds{quantile="0"} 2.9153e-05
+        go_gc_duration_seconds{quantile="0.25"} 6.2832e-05
+        go_gc_duration_seconds{quantile="0.5"} 9.7187e-05
+        go_gc_duration_seconds{quantile="0.75"} 0.000112967
+        go_gc_duration_seconds{quantile="1"} 0.000215819
+        go_gc_duration_seconds_sum 0.001376862
+        go_gc_duration_seconds_count 14
+      x-konfig-generated-schema: konfig-generated-schema-components-schemas-MetricsQueryServerMetricsResponse
+      x-konfig-is-used-in-successful-response: true
+    konfig-generated-schema-paths--activity-get-parameters-0-schema:
+      example: 10
+      type: number
+      x-do-not-generate: true
+    konfig-generated-schema-paths--activity-get-parameters-1-schema:
+      example: 50
+      type: number
+      x-do-not-generate: true
+    konfig-generated-schema-paths--activity-get-responses-200-headers-Content-Range-schema:
+      example: 1-50/1134
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-paths--vaults-get-parameters-0-schema:
+      example: name eq "Some Vault Name"
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-paths--vaults-vaultUuid-items-get-parameters-1-schema:
+      example: title eq "Some Item Name"
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-get-parameters-2-schema:
+      example: true
+      type: boolean
+      x-do-not-generate: true
+    konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-fileUuid-get-parameters-3-schema:
+      example: true
+      type: boolean
+      x-do-not-generate: true
+    ? konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-fileUuid-content-get-responses-200-headers-Content-Disposition-schema
+    : example: attachment; filename="privkey.pem"
+      type: string
+      x-do-not-generate: true
+    ? konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-fileUuid-content-get-responses-200-headers-Content-Length-schema
+    : example: "6432"
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-File:
+      example:
+        id: 6r65pjq33banznomn7q22sj44e
+        name: foo.txt
+        size: 35
+        content_path: v1/vaults/ionaiwtdvgclrixbt6ztpqcxnq/items/p7eflcy7f5mk7vg6zrzf5rjjyu/files/6r65pjq33banznomn7q22sj44e/content
+        content: VGhlIGZ1dHVyZSBiZWxvbmdzIHRvIHRoZSBjdXJpb3VzLgo=
+      properties:
+        id:
+          example: 6r65pjq33banznomn7q22sj44e
+          type: string
+        name:
+          example: foo.txt
+          type: string
+        size:
+          example: 35
+          type: number
+        content_path:
+          example: v1/vaults/ionaiwtdvgclrixbt6ztpqcxnq/items/p7eflcy7f5mk7vg6zrzf5rjjyu/files/6r65pjq33banznomn7q22sj44e/content
+          type: string
+        content:
+          example: VGhlIGZ1dHVyZSBiZWxvbmdzIHRvIHRoZSBjdXJpb3VzLgo=
+          type: string
+      type: object
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-File-properties-id:
+      example: 6r65pjq33banznomn7q22sj44e
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-File-properties-name:
+      example: foo.txt
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-File-properties-size:
+      example: 35
+      type: number
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-File-properties-content_path:
+      example: v1/vaults/ionaiwtdvgclrixbt6ztpqcxnq/items/p7eflcy7f5mk7vg6zrzf5rjjyu/files/6r65pjq33banznomn7q22sj44e/content
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-File-properties-content:
+      example: VGhlIGZ1dHVyZSBiZWxvbmdzIHRvIHRoZSBjdXJpb3VzLgo=
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-GeneratorRecipe-properties-length:
+      example: 32
+      type: number
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-GeneratorRecipe-properties-excludeCharacters:
+      example: abc1
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-Item-properties-urls:
+      example:
+      - primary: true
+        href: https://example.com
+      - href: https://example.org
+      items:
+        properties:
+          primary:
+            example: true
+            type: boolean
+          href:
+            example: https://example.com
+            type: string
+        type: object
+      type: array
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-Item-properties-favorite:
+      example: false
+      type: boolean
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-Field-properties-type:
+      example: STRING
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-Field-properties-generate:
+      example: false
+      type: boolean
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-Patch-items-properties-path:
+      example: /fields/06gnn2b95example10q91512p5/label
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-HealthCheckLivenessResponse:
+      example: "."
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-components-schemas-MetricsQueryServerMetricsResponse:
+      example: |
+        # HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
+        # TYPE go_gc_duration_seconds summary
+        go_gc_duration_seconds{quantile="0"} 2.9153e-05
+        go_gc_duration_seconds{quantile="0.25"} 6.2832e-05
+        go_gc_duration_seconds{quantile="0.5"} 9.7187e-05
+        go_gc_duration_seconds{quantile="0.75"} 0.000112967
+        go_gc_duration_seconds{quantile="1"} 0.000215819
+        go_gc_duration_seconds_sum 0.001376862
+        go_gc_duration_seconds_count 14
+      type: string
+      x-do-not-generate: true
+    konfig-generated-schema-single-parameter-schema-get--activity:
+      properties:
+        limit:
+          default: 50
+          example: 10
+          type: integer
+          x-konfig-original-example: 10
+          x-konfig-generated-schema: konfig-generated-schema-paths--activity-get-parameters-0-schema
+        offset:
+          default: 0
+          example: 50
+          type: integer
+          x-konfig-original-example: 50
+          x-konfig-generated-schema: konfig-generated-schema-paths--activity-get-parameters-1-schema
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - limit
+      - offset
+    konfig-generated-schema-single-parameter-schema-get--vaults:
+      properties:
+        filter:
+          example: name eq "Some Vault Name"
+          type: string
+          x-konfig-original-example: name eq "Some Vault Name"
+          x-konfig-generated-schema: konfig-generated-schema-paths--vaults-get-parameters-0-schema
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - filter
+    konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid:
+      properties:
+        vaultUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+      required:
+      - vaultUuid
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - vaultUuid
+    konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items:
+      properties:
+        vaultUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        filter:
+          example: title eq "Some Item Name"
+          type: string
+          x-konfig-original-example: title eq "Some Item Name"
+          x-konfig-generated-schema: konfig-generated-schema-paths--vaults-vaultUuid-items-get-parameters-1-schema
+      required:
+      - vaultUuid
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - vaultUuid
+      - filter
+    konfig-generated-schema-single-parameter-schema-post--vaults-vaultUuid-items:
+      properties:
+        vaultUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        version:
+          type: integer
+        id:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        vault:
+          properties:
+            id:
+              pattern: "^[\\da-z]{26}$"
+              type: string
+          required:
+          - id
+          type: object
+        category:
+          enum:
+          - LOGIN
+          - PASSWORD
+          - API_CREDENTIAL
+          - SERVER
+          - DATABASE
+          - CREDIT_CARD
+          - MEMBERSHIP
+          - PASSPORT
+          - SOFTWARE_LICENSE
+          - OUTDOOR_LICENSE
+          - SECURE_NOTE
+          - WIRELESS_ROUTER
+          - BANK_ACCOUNT
+          - DRIVER_LICENSE
+          - IDENTITY
+          - REWARD_PROGRAM
+          - DOCUMENT
+          - EMAIL_ACCOUNT
+          - SOCIAL_SECURITY_NUMBER
+          - MEDICAL_RECORD
+          - SSH_KEY
+          - CUSTOM
+          type: string
+        urls:
+          example:
+          - primary: true
+            href: https://example.com
+          - href: https://example.org
+          items:
+            properties:
+              label:
+                type: string
+              primary:
+                type: boolean
+              href:
+                format: url
+                type: string
+            required:
+            - href
+            type: object
+          type: array
+          x-konfig-original-example:
+          - primary: true
+            href: https://example.com
+          - href: https://example.org
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Item-properties-urls
+        favorite:
+          default: false
+          example: false
+          type: boolean
+          x-konfig-original-example: false
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Item-properties-favorite
+        state:
+          enum:
+          - ARCHIVED
+          - DELETED
+          readOnly: true
+          type: string
+        createdAt:
+          format: date-time
+          readOnly: true
+          type: string
+        updatedAt:
+          format: date-time
+          readOnly: true
+          type: string
+        lastEditedBy:
+          readOnly: true
+          type: string
+        sections:
+          items:
+            properties:
+              id:
+                type: string
+              label:
+                type: string
+            type: object
+          type: array
+        fields:
+          items:
+            $ref: '#/components/schemas/Field'
+          type: array
+        files:
+          items:
+            $ref: '#/components/schemas/File'
+          type: array
+      required:
+      - category
+      - vault
+      - vaultUuid
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - vaultUuid
+    konfig-generated-schema-single-parameter-schema-delete--vaults-vaultUuid-items-itemUuid:
+      properties:
+        vaultUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        itemUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+      required:
+      - itemUuid
+      - vaultUuid
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - vaultUuid
+      - itemUuid
+    konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items-itemUuid:
+      properties:
+        vaultUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        itemUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+      required:
+      - itemUuid
+      - vaultUuid
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - vaultUuid
+      - itemUuid
+    konfig-generated-schema-single-parameter-schema-put--vaults-vaultUuid-items-itemUuid:
+      properties:
+        vaultUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        itemUuid:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        version:
+          type: integer
+        id:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+        vault:
+          properties:
+            id:
+              pattern: "^[\\da-z]{26}$"
+              type: string
+          required:
+          - id
+          type: object
+        category:
+          enum:
+          - LOGIN
+          - PASSWORD
+          - API_CREDENTIAL
+          - SERVER
+          - DATABASE
+          - CREDIT_CARD
+          - MEMBERSHIP
+          - PASSPORT
+          - SOFTWARE_LICENSE
+          - OUTDOOR_LICENSE
+          - SECURE_NOTE
+          - WIRELESS_ROUTER
+          - BANK_ACCOUNT
+          - DRIVER_LICENSE
+          - IDENTITY
+          - REWARD_PROGRAM
+          - DOCUMENT
+          - EMAIL_ACCOUNT
+          - SOCIAL_SECURITY_NUMBER
+          - MEDICAL_RECORD
+          - SSH_KEY
+          - CUSTOM
+          type: string
+        urls:
+          example:
+          - primary: true
+            href: https://example.com
+          - href: https://example.org
+          items:
+            properties:
+              label:
+                type: string
+              primary:
+                type: boolean
+              href:
+                format: url
+                type: string
+            required:
+            - href
+            type: object
+          type: array
+          x-konfig-original-example:
+          - primary: true
+            href: https://example.com
+          - href: https://example.org
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Item-properties-urls
+        favorite:
+          default: false
+          example: false
+          type: boolean
+          x-konfig-original-example: false
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Item-properties-favorite
+        state:
+          enum:
+          - ARCHIVED
+          - DELETED
+          readOnly: true
+          type: string
+        createdAt:
+          format: date-time
+          readOnly: true
+          type: string
+        updatedAt:
+          format: date-time
+          readOnly: true
+          type: string
+        lastEditedBy:
+          readOnly: true
+          type: string
+        sections:
+          items:
+            properties:
+              id:
+                type: string
+              label:
+                type: string
+            type: object
+          type: array
+        fields:
+          items:
+            $ref: '#/components/schemas/Field'
+          type: array
+        files:
+          items:
+            $ref: '#/components/schemas/File'
+          type: array
+      required:
+      - category
+      - itemUuid
+      - vault
+      - vaultUuid
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - vaultUuid
+      - itemUuid
+    konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items-itemUuid-files:
+      properties:
+        vaultUuid:
+          format: uuid
+          type: string
+        itemUuid:
+          format: uuid
+          type: string
+        inline_files:
+          example: true
+          type: boolean
+          x-konfig-original-example: true
+          x-konfig-generated-schema: konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-get-parameters-2-schema
+      required:
+      - itemUuid
+      - vaultUuid
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - vaultUuid
+      - itemUuid
+      - inline_files
+    konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items-itemUuid-files-fileUuid:
+      properties:
+        vaultUuid:
+          format: uuid
+          type: string
+        itemUuid:
+          format: uuid
+          type: string
+        fileUuid:
+          format: uuid
+          type: string
+        inline_files:
+          example: true
+          type: boolean
+          x-konfig-original-example: true
+          x-konfig-generated-schema: konfig-generated-schema-paths--vaults-vaultUuid-items-itemUuid-files-fileUuid-get-parameters-3-schema
+      required:
+      - fileUuid
+      - itemUuid
+      - vaultUuid
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter:
+      - vaultUuid
+      - itemUuid
+      - fileUuid
+      - inline_files
+    konfig-generated-schema-single-parameter-schema-get--vaults-vaultUuid-items-itemUuid-files-fileUuid-content:
+      properties: {}
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter: []
+    konfig-generated-schema-single-parameter-schema-get--heartbeat:
+      properties: {}
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter: []
+    konfig-generated-schema-single-parameter-schema-get--health:
+      properties: {}
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter: []
+    konfig-generated-schema-single-parameter-schema-get--metrics:
+      properties: {}
+      type: object
+      x-do-not-generate: true
+      x-konfig-is-parameter: []
+    File_section:
+      description: "For files that are in a section, this field describes the section."
+      properties:
+        id:
+          type: string
+      type: object
+    Item_vault:
+      example:
+        id: id
+      properties:
+        id:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+      required:
+      - id
+      type: object
+    Item_urls_inner:
+      properties:
+        label:
+          type: string
+        primary:
+          type: boolean
+        href:
+          format: url
+          type: string
+      required:
+      - href
+      type: object
+    FullItem_allOf_sections:
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+      type: object
+      example: null
+    FullItem_allOf:
+      properties:
+        sections:
+          items:
+            $ref: '#/components/schemas/FullItem_allOf_sections'
+          type: array
+        fields:
+          items:
+            $ref: '#/components/schemas/Field'
+          type: array
+        files:
+          items:
+            $ref: '#/components/schemas/File'
+          type: array
+      type: object
+      example: null
+    Field_section:
+      properties:
+        id:
+          type: string
+      type: object
+    APIRequest_actor:
+      example:
+        userAgent: userAgent
+        requestIp: requestIp
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        account: account
+        jti: jti
+      properties:
+        id:
+          format: uuid
+          type: string
+        account:
+          type: string
+        jti:
+          type: string
+        userAgent:
+          type: string
+        requestIp:
+          type: string
+      type: object
+    APIRequest_resource_vault:
+      example:
+        id: id
+      properties:
+        id:
+          pattern: "^[\\da-z]{26}$"
+          type: string
+      type: object
+    APIRequest_resource:
+      example:
+        item:
+          id: id
+        itemVersion: 0
+        type: ITEM
+        vault:
+          id: id
+      properties:
+        type:
+          enum:
+          - ITEM
+          - VAULT
+          type: string
+        vault:
+          $ref: '#/components/schemas/APIRequest_resource_vault'
+        item:
+          $ref: '#/components/schemas/APIRequest_resource_vault'
+        itemVersion:
+          type: integer
+      type: object
+    Patch_inner:
+      properties:
+        op:
+          enum:
+          - add
+          - remove
+          - replace
+          type: string
+        path:
+          description: "An RFC6901 JSON Pointer pointing to the Item document, an\
+            \ Item Attribute, and Item Field by Field ID, or an Item Field Attribute"
+          example: /fields/06gnn2b95example10q91512p5/label
+          type: string
+          x-konfig-original-example: /fields/06gnn2b95example10q91512p5/label
+          x-konfig-generated-schema: konfig-generated-schema-components-schemas-Patch-items-properties-path
+        value:
+          type: object
+      required:
+      - op
+      - path
+      type: object
+  securitySchemes:
+    ConnectToken:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+      x-konfig-globally-required-security: false
+
