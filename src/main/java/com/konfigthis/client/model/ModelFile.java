@@ -229,7 +229,7 @@ public class ModelFile {
    * @return content
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(example = "[B@6eb605e1", value = "Base64-encoded contents of the file. Only set if size <= OP_MAX_INLINE_FILE_SIZE_KB kb and `inline_files` is set to `true`.")
+  @ApiModelProperty(example = "[B@50bec4e3", value = "Base64-encoded contents of the file. Only set if size <= OP_MAX_INLINE_FILE_SIZE_KB kb and `inline_files` is set to `true`.")
 
   public byte[] getContent() {
     return content;
